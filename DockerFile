@@ -1,0 +1,24 @@
+FROM python:3.9.2 AS common_layer
+WORKDIR /app/code
+ENV PYTHONPATH="/app/code/"
+RUN apt-get update \
+    && apt-get install -y \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+
+FROM common_layer AS api_deps
+COPY requirements.txt /app/
+RUN cd /app \
+    && pip install -r /app/requirements.txt
+
+
+FROM api_deps AS tests
+COPY test_requirements.txt /app/
+RUN cd /app \
+    && pip install -r /app/test_requirements.txt
+CMD ["pytest"]
+
+
+FROM api_deps AS api
+ENTRYPOINT ["./gunicorn.sh"]
